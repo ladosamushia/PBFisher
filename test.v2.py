@@ -106,6 +106,7 @@ for i, bi in enumerate(Bk_sequence):
 
 print('PB cross-covariance')
 for i, pi in enumerate(Pk_sequence):
+    print(i)
     l1, k1 = pi
     for j, bj in enumerate(Bk_sequence):
         l2, (k2, k3, k4) = bj

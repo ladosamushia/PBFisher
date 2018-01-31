@@ -143,8 +143,7 @@ def CovB(var,parc,pars):
 
 def CrossPB(var1,var2,parc,pars):
 
-    k1, mu = var1
-    k2, k3, k4, mu1, phi12 = var2
+    k1, k2, k3, mu1, phi12 = var2
 
     navg, Vs = pars
 
@@ -152,7 +151,7 @@ def CrossPB(var1,var2,parc,pars):
     mu2 = mu1*mu12 - np.sqrt(1 - mu1**2)*np.sqrt(1 - mu12**2)*np.cos(phi12)
     mu3 = -(mu1*k1 + mu2*k2)/k3
     
-    C = Bisp(var2,parc)
+    C = Bisp(var2,parc,pars)
     C += Pk([k1,mu1],parc)/navg  
     C += Pk([k2,mu2],parc)/navg  
     C += Pk([k2,mu2],parc)/navg  
