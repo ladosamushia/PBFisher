@@ -1,31 +1,32 @@
 import numpy as np
 from scipy.integrate import quad, dblquad
+import scipy.interpolate as itp
 from itertools import combinations_with_replacement as cwr
 import itertools as itr
-import BFisherutils as BF
+from _BFisher import lib, ffi
 
-def Legandre(l,mu):
-    if l == 0:
-        return 1
-    elif l == 2:
-        return (3*mu**2 - 1)/2
-    elif l==4:
-        return (35*mu**4 - 30*mu**2 + 3)/8
+kk, PP = np.loadtxt('test_matterpower.dat',unpack=True)
+Piso = itp.interp1d(kk, PP, 'cubic')
+
     
 def CovP(mu,k,l1,l2,parc,pars):
     var = (k, mu)
-    cov = BF.CovP(var,parc,pars)*Legandre(l1,mu)*Legandre(l2,mu)
+    Pk1 = Piso(k)
+    cov = lib.CovP(Pk1,var,parc,pars)*lib.Legandre(l1,mu)*lib.Legandre(l2,mu)
     return cov
 
 def CovB(phi,mu,k1,k2,k3,l1,l2,parc,pars):
     var = (k1, k2, k3, mu, phi)
-    cov = BF.CovB(var,parc,pars)*Legandre(l1,mu)*Legandre(l2,mu)
+    Pk1 = Piso(k1)
+    Pk2 = Piso(k2)
+    Pk3 = Piso(k3)
+    cov = lib.CovB(Pk1,Pk2,Pk3,var,parc,pars)*lib.Legandre(l1,mu)*lib.Legandre(l2,mu)
     return cov
 
 def CrossPB(phi,mu,k1,k2,k3,k4,l1,l2,parc,pars):
     varp = (k1, mu)
     varb = (k2, k3, k4, mu, phi)
-    cov = BF.CrossPB(varp,varb,parc,pars)*Legandre(l1,mu)*Legandre(l2,mu)
+    cov = lib.CrossPB(varp,varb,parc,pars)*lib.Legandre(l1,mu)*lib.Legandre(l2,mu)
     return cov
 
 def Pcov(k1,l1,k2,l2,parc,pars):

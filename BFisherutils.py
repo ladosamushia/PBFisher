@@ -1,4 +1,3 @@
-import scipy.interpolate as itp
 import numpy as np
 
 from cffi import FFI
@@ -7,7 +6,9 @@ ffibuilder = FFI()
 
 ffibuilder.cdef("double Pk(double, double *, double *);")
 ffibuilder.cdef("double Bk(double, double, double, double *, double *, double *);")
-
+ffibuilder.cdef("double CovP(double ,double*, double* , double*);")
+ffibuilder.cdef("double CovB(double, double, double, double*, double*, double*);")
+ffibuilder.cdef("double Legandre(int, double);")
 ffibuilder.set_source("_BFisher",
 r""" 
 #include <math.h>
@@ -157,6 +158,18 @@ r"""
     C += 1/navg/navg;
 
     return C;
+ }
+
+ double Legandre(int l, double mu){
+    if (l == 0){
+        return 1;
+    }
+    else if (l == 2){
+        return (3*mu*mu - 1)/2;
+    }
+    else if (l == 4){
+        return (35*mu*mu*mu*mu - 30*mu*mu + 3)/8;
+    }
  }
 
 """)
