@@ -98,7 +98,6 @@ for i, pi in enumerate(Pk_sequence):
 
 print('BB covariance')
 for i, bi in enumerate(Bk_sequence):
-    print(i)
     l1, (k1, k2, k3) = bi
     for j, bj in enumerate(Bk_sequence):
         l2, (k4, k5, k6) = bj

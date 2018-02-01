@@ -9,6 +9,8 @@ ffibuilder.cdef("double Bk(double, double, double, double *, double *, double *)
 ffibuilder.cdef("double CovP(double ,double*, double* , double*);")
 ffibuilder.cdef("double CovB(double, double, double, double*, double*, double*);")
 ffibuilder.cdef("double Legandre(int, double);")
+ffibuilder.cdef("double CrossPB(double, double, double, double*,double*, double*,double*);")
+
 ffibuilder.set_source("_BFisher",
 r""" 
 #include <math.h>
