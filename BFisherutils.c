@@ -1,21 +1,6 @@
-import numpy as np
-
-from cffi import FFI
-
-ffibuilder = FFI()
-
-ffibuilder.cdef("double Pk(double, double *, double *);")
-ffibuilder.cdef("double Bk(double, double, double, double *, double *, double *);")
-ffibuilder.cdef("double CovP(double ,double*, double* , double*);")
-ffibuilder.cdef("double CovB(double, double, double, double*, double*, double*);")
-ffibuilder.cdef("double Legandre(int, double);")
-ffibuilder.cdef("double CrossPB(double, double, double, double*,double*, double*,double*);")
-
-ffibuilder.set_source("_BFisher",
-r""" 
 #include <math.h>
 
- double Pk(double Pk1, double *var, double *parc) {
+double Pk(double Pk1, double *var, double *parc) {
    double k = var[0];
    double mu = var[1];
    double apar = parc[0];
@@ -29,7 +14,7 @@ r"""
    return (b1 + f*mu)*(b1 + f*mu)*Pk1;
  }
 
- double Bk(double Pk1, double Pk2, double Pk3, double *var, double *parc,
+double Bk(double Pk1, double Pk2, double Pk3, double *var, double *parc,
            double *pars) {
    double k1  = var[0];
    double k2  = var[1];
@@ -98,16 +83,16 @@ r"""
    Bi += (Pk(Pk1,var1,parc) + Pk(Pk2,var2,parc) + Pk(Pk3,var3,parc))/nave;
    
    return Bi;
- }
+}
 
- double CovP(double Pk1, double* var,double* parc, double* pars){
+double CovP(double Pk1, double* var,double* parc, double* pars){
     double navg = pars[0];
     double C = (Pk(Pk1,var,parc) + 1/navg);
     C *= C;
     return C;
- }
+}
 
- double CovB(double Pk1, double Pk2, double Pk3, double* var, double* parc, double* pars){
+double CovB(double Pk1, double Pk2, double Pk3, double* var, double* parc, double* pars){
  
     double k1 = var[0];
     double k2 = var[1];
@@ -132,9 +117,9 @@ r"""
     C *= Vs;
 
     return C;
- }
+}
 
- double CrossPB(double Pk1, double Pk2, double Pk3, double* var1,double* var2,
+double CrossPB(double Pk1, double Pk2, double Pk3, double* var1,double* var2,
                 double* parc,double* pars){
 
     double k1 = var2[0];
@@ -160,9 +145,9 @@ r"""
     C += 1/navg/navg;
 
     return C;
- }
+}
 
- double Legandre(int l, double mu){
+double Legandre(int l, double mu) {
     if (l == 0){
         return 1;
     }
@@ -172,70 +157,5 @@ r"""
     else if (l == 4){
         return (35*mu*mu*mu*mu - 30*mu*mu + 3)/8;
     }
- }
-
-""")
-
-if __name__ == "__main__":
-   ffibuilder.compile(verbose=True) 
-
-"""
-
-def dP(var,parc):
-    '''
-    Derivative of Power spectrum with respect to cosmological parameters - parc.
-    var are the 5D variables k1,k2,k3,mu1,phi12 k1, k2, k3, mu1, phi12 = var
-    '''
-    eps = 1e-6
-    derP = np.zeros(np.shape(parc))
-    P0 = Pk(var,parc)
-    for i in range(np.shape(parc)[0]):
-        parc1 = np.copy(parc)
-        parc1[i,:] += eps
-        P1 = Pk(var,parc1)
-        derP[i,:] = (P1 - P0)/eps
-    return derP
-    
-def dB(var,parc,pars):
-    '''
-    Derivative of Bispectrum with respect to cosmological parameters - parc. var are
-    the 5D variables k1,k2,k3,mu1,phi12
-    k1, k2, k3, mu1, phi12 = var
-    '''
-    eps = 1e-6
-    derB = np.zeros(np.shape(parc))
-    B0 = Bisp(var,parc,pars)
-    for i in range(np.shape(parc)[0]):
-        parc1 = np.copy(parc)
-        parc1[i,:] += eps
-        B1 = Bisp(var,parc1,pars)
-        derB[i,:] = (B1 - B0)/eps
-    return derB
-
-
-def Fishz(pars,parc):
-    '''
-    Compute Bispectrum Fisher Matrix at a fixed redshift for survey parameters -
-    pars (that are known/fixed), and cosmological parameters - parc (that are
-    unknown).
-    pars = [nbar, Volume]
-    parc = [Omega_m, sigma_8, n_s, w_0, w_a, Omega_b, h0]
-    '''
-    # Bispectrum in redshift space is a 5D function. Integrate over 5D with MC.
-    RR = random.rand(NMC,5)
-    for i in range(NMC):
-        eta1 = etamax*RR[i,0]
-        eta2 = etamax*RR[i,1]
-        eta3 = etamax*RR[i,2]
-        k1 = np.sqrt(2*eta1)
-        k2 = np.sqrt(2*eta2)
-        k3 = np.sqrt(2*eta3)
-        mu1 = 2*mumax*RR[i,3] - 1
-        phi12 = 2*np.pi*RR[i,4]
-        var = [k1, k2, k3, mu1, phi12]
-        CB = CovB()
-        derB = dB()
-        FM += np.outer(dB,dB)/CB
-
-    return FM
-"""
+    return 0;
+}

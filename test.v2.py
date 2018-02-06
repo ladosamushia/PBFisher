@@ -8,7 +8,6 @@ from _BFisher import lib, ffi
 kk, PP = np.loadtxt('test_matterpower.dat',unpack=True)
 Piso = itp.interp1d(kk, PP, 'cubic')
 
-    
 def CovP(mu,k,l1,l2,parc,pars):
     var = (k, mu)
     Pk1 = Piso(k)
@@ -115,4 +114,12 @@ for i, pi in enumerate(Pk_sequence):
 
 print('Invert cov to get fisher')
 PBfisher = np.linalg.inv(PBcov)
+
+dPB = np.zeros((np.size(parc),NPB))
+
+for i, pi in enumerate(Pk_sequence):
+    dPB[:,i] = dP(var,parc)
+
+for i, bi in enumerate(Bk_sequence):
+    dPB[:,NP+i] = dB(var,parc,pars)
 
