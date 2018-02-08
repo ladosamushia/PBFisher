@@ -11,11 +11,11 @@ from ctypes import *
 kk, PP = np.loadtxt('test_matterpower.dat',unpack=True)
 Piso = itp.interp1d(kk, PP, 'cubic')
 
-lib = ctypes.cdll.LoadLibrary('./BFisherutils.so')
-lib.ICovB.restype = c_double
-lib.ICovB.argtypes = (c_int, POINTER(c_double), c_void_p)
-lib.ICrossPB.restype = c_double
-lib.ICrossPB.argtypes = (c_int, POINTER(c_double), c_void_p) 
+libb = ctypes.cdll.LoadLibrary('./BFisherutils.so')
+libb.ICovB.restype = c_double
+libb.ICovB.argtypes = (c_int, POINTER(c_double), c_void_p)
+libb.ICrossPB.restype = c_double
+libb.ICrossPB.argtypes = (c_int, POINTER(c_double), c_void_p) 
 
 def CovP(mu,k,l1,l2,parc,pars):
     var = (k, mu)
@@ -24,45 +24,38 @@ def CovP(mu,k,l1,l2,parc,pars):
     return cov
 
 def Pcov(k1,l1,k2,l2,parc,pars):
-    if k1 == k2:
-        cov = quad(CovP,0,1,args=(k1,l1,l2,parc,pars),epsrel=1e-3)[0]
-    else:
-        cov = 0
+    cov = quad(CovP,0,1,args=(k1,l1,l2,parc,pars),epsrel=1e-3)[0]
     return cov
 
 def Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars):
-    if k1 == k4 and k2 == k5 and k3 == k6:
 
-        Pk1 = Piso(k1)
-        Pk2 = Piso(k2)
-        Pk3 = Piso(k3)
-        apar, aper, f, b1, b2 = parc
-        nave, Vs = pars
-        arguments = (c_double*3)(k1,k2,k3)
-        user_data = cast(pointer(arguments),c_void_p)
+    Pk1 = Piso(k1)
+    Pk2 = Piso(k2)
+    Pk3 = Piso(k3)
+    apar, aper, f, b1, b2 = parc
+    nave, Vs = pars
+    udata = (c_double*12)(Pk1,Pk2,Pk3,apar,aper,f,b1,b2,nave,Vs)
+    user_data = cast(pointer(udata),c_void_p)
 
-        Ifunct = LowLevelCallable(lib.ICovB,user_data)
-        option = {'epsrel' : 1e-3}
-        cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
-    else:
-        cov = 0
+    Ifunct = LowLevelCallable(libb.ICovB,user_data)
+    option = {'epsrel' : 1e-3}
+    arguments = (c_double*3)(k1,k2,k3)
+    cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
     return cov
 
 def PBcross(k1,l1,k2,k3,k4,l2,parc,pars):
-    if k1 == k2 or k1 == k3 or k1 == k4:
-        Pk1 = Piso(k1)
-        Pk2 = Piso(k2)
-        Pk3 = Piso(k3)
-        apar, aper, f, b1, b2 = parc
-        nave, Vs = pars
-        arguments = (c_double*3)(k1,k2,k3)
-        user_data = cast(pointer(arguments),c_void_p)
+    Pk1 = Piso(k1)
+    Pk2 = Piso(k2)
+    Pk3 = Piso(k3)
+    apar, aper, f, b1, b2 = parc
+    nave, Vs = pars
+    udata = (c_double*12)(Pk1,Pk2,Pk3,apar,aper,f,b1,b2,nave,Vs)
+    user_data = cast(pointer(udata),c_void_p)
 
-        Ifunct = LowLevelCallable(lib.ICovB,user_data)
-        option = {'epsrel' : 1e-3}
-        cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
-    else:
-        cov = 0
+    Ifunct = LowLevelCallable(libb.ICrossPB,user_data)
+    option = {'epsrel' : 1e-3}
+    arguments = (c_double*3)(k1,k2,k3)
+    cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
     return cov
 
 kmax = 0.2
@@ -102,8 +95,9 @@ for i, pi in enumerate(Pk_sequence):
     l1, k1 = pi
     for j, pj in enumerate(Pk_sequence):
         l2, k2 = pj
-        PBcov[i,j] = Pcov(k1,l1,k2,l2,parc,pars)
-        PBcov[j,i] = PBcov[j,i]
+        if k1 == k2:
+            PBcov[i,j] = Pcov(k1,l1,k2,l2,parc,pars)
+            PBcov[j,i] = PBcov[j,i]
 
 print('BB covariance')
 for i, bi in enumerate(Bk_sequence):
@@ -111,8 +105,9 @@ for i, bi in enumerate(Bk_sequence):
     l1, (k1, k2, k3) = bi
     for j, bj in enumerate(Bk_sequence):
         l2, (k4, k5, k6) = bj
-        PBcov[NP+i,NP+j] = Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars)
-        PBcov[NP+j,NP+i] = PBcov[NP+i,NP+j]
+        if k1 == k4 and k2 == k5 and k3 == k5:
+            PBcov[NP+i,NP+j] = Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars)
+            PBcov[NP+j,NP+i] = PBcov[NP+i,NP+j]
 
 print('PB cross-covariance')
 for i, pi in enumerate(Pk_sequence):
@@ -120,12 +115,13 @@ for i, pi in enumerate(Pk_sequence):
     l1, k1 = pi
     for j, bj in enumerate(Bk_sequence):
         l2, (k2, k3, k4) = bj
-        PBcov[i,NP+j] = PBcross(k1,l1,k2,k3,k4,l2,parc,pars)
-        PBcov[NP+j,i] = PBcov[i,NP+j]
+        if k1 == k2 or k1 == k3 or k1 == k4:
+            PBcov[i,NP+j] = PBcross(k1,l1,k2,k3,k4,l2,parc,pars)
+            PBcov[NP+j,i] = PBcov[i,NP+j]
 
 print('Invert cov to get fisher')
 PBfisher = np.linalg.inv(PBcov)
-
+'''
 dPB = np.zeros((np.size(parc),NPB))
 
 for i, pi in enumerate(Pk_sequence):
@@ -133,4 +129,4 @@ for i, pi in enumerate(Pk_sequence):
 
 for i, bi in enumerate(Bk_sequence):
     dPB[:,NP+i] = dB(var,parc,pars)
-
+'''

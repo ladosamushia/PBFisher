@@ -2,8 +2,10 @@
 #include <stdio.h>
 
 double Pk(double Pk1, double *var, double *parc) {
+
    double k = var[0];
    double mu = var[1];
+
    double apar = parc[0];
    double aper = parc[1];
    double f = parc[2];
@@ -17,6 +19,7 @@ double Pk(double Pk1, double *var, double *parc) {
 
 double Bk(double Pk1, double Pk2, double Pk3, double *var, double *parc,
            double *pars) {
+
    double k1  = var[0];
    double k2  = var[1];
    double k3  = var[2];
@@ -28,6 +31,7 @@ double Bk(double Pk1, double Pk2, double Pk3, double *var, double *parc,
    double f = parc[2];
    double b1 = parc[3];
    double b2 = parc[4];
+
 
    double nave = pars[0];
 
@@ -124,26 +128,23 @@ double CrossPB(double Pk1, double Pk2, double Pk3, double* var, double* parc,
                double* pars){
 
     double k1 = var[0];
-    double k2 = var[1];
-    double k3 = var[2];
+//    double k2 = var[1];
+//    double k3 = var[2];
     double mu1 = var[3];
-    double phi12 = var[4];
+//    double phi12 = var[4];
 
     double navg = pars[0];
 
-    double mu12 = (k3*k3 - k1*k1 - k2*k2)/2/k1/k2;
-    double mu2 = mu1*mu12 - sqrt(1 - mu1*mu1)*sqrt(1 - mu12*mu12)*cos(phi12);
-    double mu3 = -(mu1*k1 + mu2*k2)/k3;
+//    double mu12 = (k3*k3 - k1*k1 - k2*k2)/2/k1/k2;
+//    double mu2 = mu1*mu12 - sqrt(1 - mu1*mu1)*sqrt(1 - mu12*mu12)*cos(phi12);
+//    double mu3 = -(mu1*k1 + mu2*k2)/k3;
     
     double pvar1[2] = {k1,mu1};
-    double pvar2[2] = {k2,mu2};
-    double pvar3[2] = {k3,mu3};
+//    double pvar2[2] = {k2,mu2};
+//    double pvar3[2] = {k3,mu3};
 
-    double C = Bk(Pk1,Pk2,Pk3,var,parc,pars);
-    C += Pk(Pk1,pvar1,parc)/navg;
-    C += Pk(Pk2,pvar2,parc)/navg; 
-    C += Pk(Pk3,pvar3,parc)/navg;  
-    C += 1/navg/navg;
+    double C = Bk(Pk1,Pk2,Pk3,var,parc,pars) + 1/navg/navg;
+    C *= Pk(Pk1,pvar1,parc) + 1/navg;
 
     return C;
 }
@@ -192,9 +193,6 @@ double ICovB(int n, double* x, void* data) {
     double pars[2] = {nave, Vs};
 
     double cov = CovB(pk1, pk2, pk3, &var[0], &parc[0], &pars[0]);
-//    printf("%f %f %f\n",k1,k2,k3);
-//    printf("%f %f %f\n",pk1,pk2,pk3);
-//    printf("%f %f %f %f %f\n",var[0],var[1],var[2],var[3],var[4]);
 
     cov *= Legandre(l1,mu);
     cov *= Legandre(l2,mu);
