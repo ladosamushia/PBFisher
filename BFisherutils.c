@@ -120,14 +120,14 @@ double CovB(double Pk1, double Pk2, double Pk3, double* var, double* parc, doubl
     return C;
 }
 
-double CrossPB(double Pk1, double Pk2, double Pk3, double* var1,double* var2,
-                double* parc,double* pars){
+double CrossPB(double Pk1, double Pk2, double Pk3, double* var, double* parc,
+               double* pars){
 
-    double k1 = var2[0];
-    double k2 = var2[1];
-    double k3 = var2[2];
-    double mu1 = var2[3];
-    double phi12 = var2[4];
+    double k1 = var[0];
+    double k2 = var[1];
+    double k3 = var[2];
+    double mu1 = var[3];
+    double phi12 = var[4];
 
     double navg = pars[0];
 
@@ -139,7 +139,7 @@ double CrossPB(double Pk1, double Pk2, double Pk3, double* var1,double* var2,
     double pvar2[2] = {k2,mu2};
     double pvar3[2] = {k3,mu3};
 
-    double C = Bk(Pk1,Pk2,Pk3,var2,parc,pars);
+    double C = Bk(Pk1,Pk2,Pk3,var,parc,pars);
     C += Pk(Pk1,pvar1,parc)/navg;
     C += Pk(Pk2,pvar2,parc)/navg; 
     C += Pk(Pk3,pvar3,parc)/navg;  
@@ -195,6 +195,44 @@ double ICovB(int n, double* x, void* data) {
 //    printf("%f %f %f\n",k1,k2,k3);
 //    printf("%f %f %f\n",pk1,pk2,pk3);
 //    printf("%f %f %f %f %f\n",var[0],var[1],var[2],var[3],var[4]);
+
+    cov *= Legandre(l1,mu);
+    cov *= Legandre(l2,mu);
+
+    return cov;
+}
+
+double ICrossPB(int n, double* x, void* data) {
+
+    double mu = x[0];
+    double phi = x[1];
+    double k1 = x[2];
+    double k2 = x[3];
+    double k3 = x[4];
+
+    double* extra_data = (double*) data;
+
+    double pk1 = extra_data[0];
+    double pk2 = extra_data[1];
+    double pk3 = extra_data[2];
+
+    double apar = extra_data[3];
+    double aper = extra_data[4];
+    double f = extra_data[5];
+    double b1 = extra_data[6];
+    double b2 = extra_data[7];
+
+    double nave = extra_data[8];
+    double Vs = extra_data[9];
+
+    int l1 = (int)extra_data[10];
+    int l2 = (int)extra_data[11];
+
+    double var[5] = {k1,k2,k3,mu,phi};
+    double parc[5] = {f,b1,b2,apar,aper};
+    double pars[2] = {nave, Vs};
+
+    double cov = CrossPB(pk1, pk2, pk3, &var[0], &parc[0], &pars[0]);
 
     cov *= Legandre(l1,mu);
     cov *= Legandre(l2,mu);

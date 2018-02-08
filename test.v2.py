@@ -11,16 +11,16 @@ from ctypes import *
 kk, PP = np.loadtxt('test_matterpower.dat',unpack=True)
 Piso = itp.interp1d(kk, PP, 'cubic')
 
+lib = ctypes.cdll.LoadLibrary('./BFisherutils.so')
+lib.ICovB.restype = c_double
+lib.ICovB.argtypes = (c_int, POINTER(c_double), c_void_p)
+lib.ICrossPB.restype = c_double
+lib.ICrossPB.argtypes = (c_int, POINTER(c_double), c_void_p) 
+
 def CovP(mu,k,l1,l2,parc,pars):
     var = (k, mu)
     Pk1 = Piso(k)
     cov = lib.CovP(Pk1,var,parc,pars)*lib.Legandre(l1,mu)*lib.Legandre(l2,mu)
-    return cov
-
-def CrossPB(phi,mu,k1,k2,k3,k4,l1,l2,parc,pars):
-    varp = (k1, mu)
-    varb = (k2, k3, k4, mu, phi)
-    cov = lib.CrossPB(varp,varb,parc,pars)*lib.Legandre(l1,mu)*lib.Legandre(l2,mu)
     return cov
 
 def Pcov(k1,l1,k2,l2,parc,pars):
@@ -32,9 +32,6 @@ def Pcov(k1,l1,k2,l2,parc,pars):
 
 def Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars):
     if k1 == k4 and k2 == k5 and k3 == k6:
-        lib = ctypes.cdll.LoadLibrary('./BFisherutils.so')
-        lib.ICovB.restype = c_double
-        lib.ICovB.argtypes = (c_int, POINTER(c_double), c_void_p)
 
         Pk1 = Piso(k1)
         Pk2 = Piso(k2)
@@ -51,12 +48,19 @@ def Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars):
         cov = 0
     return cov
 
-def PBcross(k1,l1,k2,k3,k4,l2):
+def PBcross(k1,l1,k2,k3,k4,l2,parc,pars):
     if k1 == k2 or k1 == k3 or k1 == k4:
-        p_l = lambda x: 0
-        p_h = lambda x: 2*np.pi
-        arguments = (k1,k2,k3,k4,l1,l2,parc,pars)
-        cov = dblquad(CrossPB,0,1,p_l,p_h,args=arguments,epsrel=1e-3)[0]
+        Pk1 = Piso(k1)
+        Pk2 = Piso(k2)
+        Pk3 = Piso(k3)
+        apar, aper, f, b1, b2 = parc
+        nave, Vs = pars
+        arguments = (c_double*3)(k1,k2,k3)
+        user_data = cast(pointer(arguments),c_void_p)
+
+        Ifunct = LowLevelCallable(lib.ICovB,user_data)
+        option = {'epsrel' : 1e-3}
+        cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
     else:
         cov = 0
     return cov
@@ -116,7 +120,7 @@ for i, pi in enumerate(Pk_sequence):
     l1, k1 = pi
     for j, bj in enumerate(Bk_sequence):
         l2, (k2, k3, k4) = bj
-        PBcov[i,NP+j] = PBcross(k1,l1,k2,k3,k4,l2)
+        PBcov[i,NP+j] = PBcross(k1,l1,k2,k3,k4,l2,parc,pars)
         PBcov[NP+j,i] = PBcov[i,NP+j]
 
 print('Invert cov to get fisher')
