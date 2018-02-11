@@ -124,27 +124,35 @@ double CovB(double Pk1, double Pk2, double Pk3, double* var, double* parc, doubl
     return C;
 }
 
-double CrossPB(double Pk1, double Pk2, double Pk3, double* var, double* parc,
+double CrossPB(int equal, double Pk1, double Pk2, double Pk3, double* var, double* parc,
                double* pars){
 
     double k1 = var[0];
-//    double k2 = var[1];
-//    double k3 = var[2];
+    double k2 = var[1];
+    double k3 = var[2];
     double mu1 = var[3];
-//    double phi12 = var[4];
+    double phi12 = var[4];
 
     double navg = pars[0];
 
-//    double mu12 = (k3*k3 - k1*k1 - k2*k2)/2/k1/k2;
-//    double mu2 = mu1*mu12 - sqrt(1 - mu1*mu1)*sqrt(1 - mu12*mu12)*cos(phi12);
-//    double mu3 = -(mu1*k1 + mu2*k2)/k3;
+    double mu12 = (k3*k3 - k1*k1 - k2*k2)/2/k1/k2;
+    double mu2 = mu1*mu12 - sqrt(1 - mu1*mu1)*sqrt(1 - mu12*mu12)*cos(phi12);
+    double mu3 = -(mu1*k1 + mu2*k2)/k3;
     
     double pvar1[2] = {k1,mu1};
-//    double pvar2[2] = {k2,mu2};
-//    double pvar3[2] = {k3,mu3};
+    double pvar2[2] = {k2,mu2};
+    double pvar3[2] = {k3,mu3};
 
     double C = Bk(Pk1,Pk2,Pk3,var,parc,pars) + 1/navg/navg;
-    C *= Pk(Pk1,pvar1,parc) + 1/navg;
+    if (equal == 1) {
+        C *= Pk(Pk1,pvar1,parc) + 1/navg;
+    }
+    else if (equal == 2) {
+        C *= Pk(Pk2,pvar2,parc) + 1/navg;
+    }
+    else if (equal == 3) {
+        C *= Pk(Pk3,pvar3,parc) + 1/navg;
+    }
 
     return C;
 }
@@ -210,27 +218,29 @@ double ICrossPB(int n, double* x, void* data) {
 
     double* extra_data = (double*) data;
 
-    double pk1 = extra_data[0];
-    double pk2 = extra_data[1];
-    double pk3 = extra_data[2];
+    int equal = (int)extra_data[0];
 
-    double apar = extra_data[3];
-    double aper = extra_data[4];
-    double f = extra_data[5];
-    double b1 = extra_data[6];
-    double b2 = extra_data[7];
+    double pk1 = extra_data[1];
+    double pk2 = extra_data[2];
+    double pk3 = extra_data[3];
 
-    double nave = extra_data[8];
-    double Vs = extra_data[9];
+    double apar = extra_data[4];
+    double aper = extra_data[5];
+    double f = extra_data[6];
+    double b1 = extra_data[7];
+    double b2 = extra_data[8];
 
-    int l1 = (int)extra_data[10];
-    int l2 = (int)extra_data[11];
+    double nave = extra_data[9];
+    double Vs = extra_data[10];
 
+    int l1 = (int)extra_data[11];
+    int l2 = (int)extra_data[12];
+    //printf("%d %f %f %f\n", equal, pk1, pk2, pk3);
     double var[5] = {k1,k2,k3,mu,phi};
     double parc[5] = {f,b1,b2,apar,aper};
     double pars[2] = {nave, Vs};
 
-    double cov = CrossPB(pk1, pk2, pk3, &var[0], &parc[0], &pars[0]);
+    double cov = CrossPB(equal, pk1, pk2, pk3, &var[0], &parc[0], &pars[0]);
 
     cov *= Legandre(l1,mu);
     cov *= Legandre(l2,mu);

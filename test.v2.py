@@ -34,7 +34,7 @@ def Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars):
     Pk3 = Piso(k3)
     apar, aper, f, b1, b2 = parc
     nave, Vs = pars
-    udata = (c_double*12)(Pk1,Pk2,Pk3,apar,aper,f,b1,b2,nave,Vs)
+    udata = (c_double*12)(Pk1,Pk2,Pk3,apar,aper,f,b1,b2,nave,Vs,l1,l2)
     user_data = cast(pointer(udata),c_void_p)
 
     Ifunct = LowLevelCallable(libb.ICovB,user_data)
@@ -43,13 +43,13 @@ def Bcov(k1,k2,k3,l1,k4,k5,k6,l2,parc,pars):
     cov = nquad(Ifunct,[[0,1],[0,2*np.pi]],args=arguments,opts=option)[0]
     return cov
 
-def PBcross(k1,l1,k2,k3,k4,l2,parc,pars):
-    Pk1 = Piso(k1)
+def PBcross(equal,l1,k2,k3,k4,l2,parc,pars):
     Pk2 = Piso(k2)
     Pk3 = Piso(k3)
+    Pk4 = Piso(k4)
     apar, aper, f, b1, b2 = parc
     nave, Vs = pars
-    udata = (c_double*12)(Pk1,Pk2,Pk3,apar,aper,f,b1,b2,nave,Vs)
+    udata = (c_double*13)(equal,Pk2,Pk3,Pk4,apar,aper,f,b1,b2,nave,Vs,l1,l2)
     user_data = cast(pointer(udata),c_void_p)
 
     Ifunct = LowLevelCallable(libb.ICrossPB,user_data)
@@ -115,18 +115,16 @@ for i, pi in enumerate(Pk_sequence):
     l1, k1 = pi
     for j, bj in enumerate(Bk_sequence):
         l2, (k2, k3, k4) = bj
-        if k1 == k2 or k1 == k3 or k1 == k4:
-            PBcov[i,NP+j] = PBcross(k1,l1,k2,k3,k4,l2,parc,pars)
-            PBcov[NP+j,i] = PBcov[i,NP+j]
+        if k1 == k2:
+            equal = 1
+        elif k1 == k3:
+            equal = 2        
+        elif k1 == k4:
+            equal = 3
+        else:
+            continue
+        PBcov[i,NP+j] = PBcross(equal,l1,k2,k3,k4,l2,parc,pars)
+        PBcov[NP+j,i] = PBcov[i,NP+j]
 
 print('Invert cov to get fisher')
 PBfisher = np.linalg.inv(PBcov)
-'''
-dPB = np.zeros((np.size(parc),NPB))
-
-for i, pi in enumerate(Pk_sequence):
-    dPB[:,i] = dP(var,parc)
-
-for i, bi in enumerate(Bk_sequence):
-    dPB[:,NP+i] = dB(var,parc,pars)
-'''
